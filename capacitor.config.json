@@ -1,0 +1,6 @@
+{
+  "appId": "com.muhammadshafiq.studyconnect",
+  "appName": "StudyConnect",
+  "webDir": "www",
+  "server": { "androidScheme": "https" }
+}
