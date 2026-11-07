@@ -15,14 +15,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Install
-        run: npm install
-      - name: Copy web files
-        run: mkdir -p www && cp index.html www/index.html
-      - name: Add Android
-        run: npx cap add android
-      - name: Sync
-        run: npx cap sync android
+      - run: npm install
+      - run: mkdir -p www && cp index.html www/index.html
+      - name: Use test ads in debug builds
+        run: sed -i 's/const ADS={test:false/const ADS={test:true/' www/index.html
+      - run: npx cap add android
+      - name: Add AdMob app ID
+        run: |
+          ID="ca-app-pub-2701121470969867~7752984934"
+          sed -i "s#</application>#<meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"$ID\"/></application>#" android/app/src/main/AndroidManifest.xml
+      - run: npx cap sync android
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
