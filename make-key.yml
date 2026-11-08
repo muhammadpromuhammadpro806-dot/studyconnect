@@ -1,0 +1,18 @@
+name: Create upload key (run once)
+on:
+  workflow_dispatch:
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create key and save it as secrets
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          PASS=$(openssl rand -hex 16)
+          echo "::add-mask::$PASS"
+          keytool -genkeypair -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PASS" -keypass "$PASS" -dname "CN=StudyConnect"
+          base64 -w0 upload.jks > ks.b64
+          gh secret set KEYSTORE_BASE64 --repo "${{ github.repository }}" < ks.b64
+          printf %s "$PASS" | gh secret set KEYSTORE_PASSWORD --repo "${{ github.repository }}"
+          rm -f upload.jks ks.b64
