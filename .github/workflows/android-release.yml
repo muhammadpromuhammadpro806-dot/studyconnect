@@ -1,4 +1,4 @@
-name: Build signed release AAB
+name: Build signed release AAB and APK
 on:
   workflow_dispatch:
     inputs:
@@ -34,18 +34,25 @@ jobs:
       - run: npx cap sync android
       - name: Set version number
         run: sed -i -E "s/versionCode[ =]+[0-9]+/versionCode ${{ github.run_number }}/" android/app/build.gradle
-      - name: Build bundle
+      - name: Build bundle and APK
         working-directory: android
-        run: ./gradlew bundleRelease
-      - name: Sign bundle
+        run: ./gradlew bundleRelease assembleRelease
+      - name: Sign bundle and APK
         env:
           KS_B64: ${{ secrets.KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           echo "$KS_B64" | base64 -d > upload.jks
           jarsigner -sigalg SHA256withRSA -digestalg SHA-256 -keystore upload.jks -storepass "$KS_PASS" android/app/build/outputs/bundle/release/app-release.aab upload
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/zipalign" -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          "$BT/apksigner" sign --ks upload.jks --ks-pass env:KS_PASS --out app-release.apk aligned.apk
           rm -f upload.jks
       - uses: actions/upload-artifact@v4
         with:
           name: studyconnect-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studyconnect-release-apk
+          path: app-release.apk 
